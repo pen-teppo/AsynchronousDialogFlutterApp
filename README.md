@@ -1,0 +1,2 @@
+# AsynchronousDialogFlutterApp
+Flutterにおける非同期処理の開始前・処理中・完了時にダイアログを表示することを実現したアプリです。
