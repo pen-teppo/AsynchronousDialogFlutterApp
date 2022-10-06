@@ -1,100 +1,104 @@
 import 'package:flutter/material.dart';
+import 'package:bloc/bloc.dart';
+import 'package:bloc/status.dart';
 
-class DialogManager{
-  static Future<bool> showProgressDialog({
-    required BuildContext context,
-    required String text,
-  }) async {
-    try{
-      bool result = await showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return Dialog(
-            child: Container(
-              margin: EdgeInsets.all(10.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 10),
-                  Text(text),
-                ],
-              ),
-            ),
-          );
-        },
-      );
-      return result;
-    }catch(e){
-      return false;
-    }
+class DialogWidget extends StatefulWidget {
+  const DialogWidget({Key? key}) : super(key: key);
+
+  @override
+  State<DialogWidget> createState() => _DialogWidgetState();
+}
+
+class _DialogWidgetState extends State<DialogWidget> {
+  late BLoC _BLoC;
+
+  @override
+  void initState(){
+    super.initState();
+    _BLoC = BLoC();
   }
 
-  static Future<bool> showNormalDialog({
-    required BuildContext context,
-    required String title,
-    required String content
-  }) async {
-    try{
-      bool result = await showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text(title),
-            content: Text(content),
-            actions: <Widget>[
-              TextButton(
-                child: Text('キャンセル',style: TextStyle(color: Colors.lightBlueAccent)),
-                onPressed: (){
-                  Navigator.of(context).pop(false);
-                },
-              ),
-              TextButton(
-                child: Text('OK',style: TextStyle(color: Colors.lightBlueAccent)),
-                onPressed: (){
-                  Navigator.of(context).pop(true);
-                },
-              ),
-            ],
-          );
-        },
-      );
-      return result;
-    }catch(e){
-      return false;
-    }
+  @override
+  void dispose(){
+    _BLoC.close();
+    super.dispose();
   }
 
-  static Future<bool> showNoticeDialog({
-    required BuildContext context,
-    required String title,
-    required String content
-  }) async {
-    try{
-      bool result = await showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text(title),
-            content: Text(content),
-            actions: <Widget>[
-              TextButton(
-                child: Text('OK',style: TextStyle(color: Colors.lightBlueAccent)),
-                onPressed: (){
-                  Navigator.of(context).pop(true);
-                },
-              ),
-            ],
-          );
-        },
-      );
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder(
+      stream: _BLoC.onDialogChange,
+      builder: (BuildContext context, AsyncSnapshot<Status> snapshot) {
+        if(snapshot.hasData){
+            if(snapshot.data! == Status.inPreparation){
+              //開始前ダイアログ表示
+              return NormalDialog(title: 'ダウンロードの確認', content: 'データをダウンロードしますか？');
+            }else if(snapshot.data! == Status.inProgress){
+              //処理中ダイアログ表示
+              return ProgressDialog(text: 'ダウンロード中');
+            }else if(snapshot.data! == Status.completed){
+              //完了時ダイアログ表示
+              return NoticeDialog(title: 'ダウンロード完了', content: 'ダウンロードが完了しました。');
+            }
+        }
 
-      return result;
-    }catch(e){
-      return false;
-    }
+        return SizedBox(
+          width: 10,
+          height: 10,
+        );
+      },
+    );
+  }
+
+  Widget ProgressDialog({required String text}) {
+    return Dialog(
+      child: Container(
+        margin: EdgeInsets.all(10.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 10),
+            Text(text),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget NormalDialog({required String title, required String content}) {
+    return AlertDialog(
+      title: Text(title),
+      content: Text(content),
+      actions: <Widget>[
+        TextButton(
+          child: Text('キャンセル',style: TextStyle(color: Colors.lightBlueAccent)),
+          onPressed: (){
+            Navigator.of(context).pop();
+          },
+        ),
+        TextButton(
+          child: Text('OK',style: TextStyle(color: Colors.lightBlueAccent)),
+          onPressed: (){
+            _BLoC.triggerAction.add(null);
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget NoticeDialog({required String title, required String content}) {
+    return AlertDialog(
+      title: Text(title),
+      content: Text(content),
+      actions: <Widget>[
+        TextButton(
+          child: Text('OK',style: TextStyle(color: Colors.lightBlueAccent)),
+          onPressed: (){
+            Navigator.of(context).pop();
+          },
+        ),
+      ],
+    );
   }
 }

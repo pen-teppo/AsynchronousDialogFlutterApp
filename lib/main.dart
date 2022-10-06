@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:bloc/bloc.dart';
+import 'package:bloc/modal.dart';
 import 'package:bloc/dialog.dart';
-import 'package:bloc/status.dart';
 
 void main() {
   runApp(const MyApp());
@@ -18,6 +17,14 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
       ),
       home: const MyHomePage(),
+      onGenerateRoute: (RouteSettings settings) {
+        final args = (settings.arguments ?? {}) as Map;
+        if (settings.name == '/dialog') {
+          return ModalOverlay(
+            builder: (BuildContext context) => DialogWidget(),
+          );
+        }
+      },
     );
   }
 }
@@ -30,47 +37,16 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  late BLoC _BLoC;
-
   @override
   void initState(){
     super.initState();
-    _BLoC = BLoC();
-    _BLoC.onDialogChange.listen((Status status) async {
-      if(Navigator.of(context).canPop() == true){
-        Navigator.pop(context);
-      }
-
-      if(status == Status.inPreparation){
-        //開始前ダイアログ表示
-        bool result = await DialogManager.showNormalDialog(
-          context: context,
-          title: 'ダウンロードの確認',
-          content: 'データをダウンロードしますか？'
-        );
-        if(result == true){
-          _BLoC.triggerAction.add(null);
-        }
-      }else if(status == Status.inProgress){
-        //処理中ダイアログ表示
-        await DialogManager.showProgressDialog(
-            context: context,
-            text: 'ダウンロード中'
-        );
-      }else if(status == Status.completed){
-        //完了時ダイアログ表示
-        await DialogManager.showNoticeDialog(
-          context: context,
-          title: 'ダウンロード完了',
-          content: 'ダウンロードが完了しました。'
-        );
-      }
+    Future(() async {
+      await Navigator.of(context).pushNamed('/dialog');
     });
   }
 
   @override
   void dispose(){
-    _BLoC.close();
     super.dispose();
   }
 
